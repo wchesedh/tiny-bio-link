@@ -1,8 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { supabase } from '@/lib/supabaseClient';
+
 
 export default function Home() {
+  const [username, setUsername] = useState('');
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
   const [links, setLinks] = useState(['', '', '']);
@@ -13,17 +16,40 @@ export default function Home() {
     setLinks(newLinks);
   };
 
-  const handleSubmit = () => {
-    const profile = { name, bio, links };
-    localStorage.setItem('tinyBioProfile', JSON.stringify(profile));
-    alert('Profile saved! Scroll down to preview 👇');
+  const handleSubmit = async () => {
+    if (!username.trim()) return;
+  
+    const { data, error } = await supabase
+      .from('profiles')
+      .upsert({
+        username: username.trim(),
+        name,
+        bio,
+        links,
+      });
+  
+    if (error) {
+      console.error('Error saving profile:', error.message);
+      alert('Failed to save profile.');
+    } else {
+      alert(`Profile saved! You can now visit /u/${username}`);
+    }
   };
+  
 
   return (
     <main className="flex flex-col items-center justify-start min-h-screen p-8 bg-gray-100">
       <h1 className="text-3xl font-bold mb-6">🧬 Tiny Bio Link</h1>
 
       <div className="w-full max-w-md space-y-4 bg-white p-6 rounded-2xl shadow-md">
+        <input
+          type="text"
+          placeholder="Username (for your public URL)"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          className="w-full border rounded-xl px-4 py-2"
+        />
+
         <input
           type="text"
           placeholder="Your name"
@@ -50,24 +76,23 @@ export default function Home() {
           />
         ))}
 
-<div className="space-y-2">
-  <button
-    onClick={handleSubmit}
-    className="w-full bg-black text-white py-2 rounded-xl hover:bg-gray-800 transition"
-  >
-    Save Profile
-  </button>
+        <div className="space-y-2">
+          <button
+            onClick={handleSubmit}
+            className="w-full bg-black text-white py-2 rounded-xl hover:bg-gray-800 transition"
+          >
+            Save Profile
+          </button>
 
-  <a
-    href="/preview"
-    target="_blank"
-    rel="noopener noreferrer"
-    className="block text-center w-full py-2 border border-black text-black rounded-xl hover:bg-gray-100 transition"
-  >
-    View My Page
-  </a>
-</div>
-
+          <a
+            href="/preview"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block text-center w-full py-2 border border-black text-black rounded-xl hover:bg-gray-100 transition"
+          >
+            View My Page
+          </a>
+        </div>
       </div>
 
       {/* Preview Section */}
